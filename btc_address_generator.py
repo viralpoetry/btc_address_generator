@@ -97,19 +97,40 @@ def encodeAddress(network_bytes, ripe):
     return '1' + addr
 
 
+#  Wallet import format
+#  https://en.bitcoin.it/wiki/Wallet_import_format
+#  https://filippo.io/brainwallets-from-the-password-to-the-address/
+def private_exponent_to_WIF(exponent):
+    # Prepend the 0x80 version/application byte
+    private_key = '80' + exponent
+    private_key = private_key.decode('hex')
+    # Append the first 4 bytes of SHA256(SHA256(private_key)) as a checksum
+    private_key += hashlib.sha256(
+        hashlib.sha256(private_key).digest()).digest()[:4]
+    # Convert to Base58 encoding
+    code_string = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+    # value = int.from_bytes(private_key, byteorder='big')
+    value = int(private_key.encode('hex'), 16)
+    output = ""
+    while value:
+        value, remainder = divmod(value, 58)
+        output = code_string[remainder] + output
+    return output
+
+
 def get_address(seed):
     h = hashlib.new('SHA256')
     h.update(seed)
-    privateEncryptionKey = h.digest().encode('hex')
-    print privateEncryptionKey
+    privateExponent = h.digest().encode('hex')
+    print 'Private exponent: ', privateExponent
+    print 'Wallet import format: ', private_exponent_to_WIF(privateExponent)
     # 0 Private ECDSA Key - 256 bits
     # print 'Now let us convert them to public keys by doing an elliptic curve point multiplication.'
     # 1 Public
-    publicEncryptionKey = arithmetic.privtopub(privateEncryptionKey)
+    publicEncryptionKey = arithmetic.privtopub(privateExponent)
     # print 'publicEncryptionKey =', publicEncryptionKey
-
-    publicEncryptionKeyBinary = arithmetic.changebase(publicEncryptionKey, 16, 256, minlen=64)
-
+    publicEncryptionKeyBinary = arithmetic.changebase(
+        publicEncryptionKey, 16, 256, minlen=64)
     ripe = hashlib.new('ripemd160')
     sha = hashlib.new('SHA256')
     # 2 Sha-256 of 1
@@ -119,12 +140,13 @@ def get_address(seed):
     ripe.update(sha.digest())
     # 4 add network bytes
     network_bytes = 00
-    # print 'Ripe digest that we will encode in the address:', ripe.digest().encode('hex')
+    # print 'Ripe digest that we will encode in the address:',
+    # ripe.digest().encode('hex')
     returnedAddress = encodeAddress(network_bytes, ripe.digest())
-    # print 'Encoded BTC address:', returnedAddress
+    print 'Encoded BTC address:', returnedAddress
     # Checksum does not validate
     return returnedAddress
 
 
 if __name__ == "__main__":
-    print get_address('hello world')
+    get_address('')
