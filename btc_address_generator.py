@@ -2,6 +2,8 @@
 import hashlib
 from struct import pack
 from pyelliptic import arithmetic
+# alternatively use this maintained version
+# pip install https://github.com/mfranciszkiewicz/pyelliptic/archive/1.5.10.tar.gz#egg=pyelliptic
 
 '''
 http://offlinebitcoins.com/
